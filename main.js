@@ -1,22 +1,145 @@
 const canvas = document.getElementById('engine screen');
 const ctx = canvas.getContext('2d');
 
-function resizeCanvas() {
-  // Update internal drawing buffer to match window size
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+let right = false;
+let left = false;
+
+
+let acc = 2
+let angle_acc_max = Math.PI*.5
+let angle_acc = 0
+let camera_angle = 0
+
+let znear = 1
+let zfar = 10
+
+
+let player_speed = 5
+
+let cubes = []
+
+let camera_x = -2
+let camera_v = 0
+
+let camera_z = 2;
+let camera_z_v = 0;
+
+// function resizeCanvas() {
+//   // Update internal drawing buffer to match window size
+//   canvas.width = window.innerWidth;
+//   canvas.height = window.innerHeight;
   
-}
+// }
 
-resizeCanvas();
+// resizeCanvas();
 
-window.addEventListener('resize', resizeCanvas);
+// window.addEventListener('resize', resizeCanvas);
+
+canvas.width = 700
+canvas.height = 700
+
+const randomHex = () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
 function point(p){
  const s = 30;
  ctx.fillStyle = '#ff4757';
  ctx.fillRect(p.x-s/2,p.y-s/2, s, s)
 
+}
+
+window.addEventListener('keydown',(event)=>{
+
+if (event.key == 'd'){
+    left = true;
+    camera_v = -5
+}
+
+else if (event.key == 'a'){
+    right = true;
+    camera_v = +5
+}
+
+else if (event.key == 's'){
+  
+    camera_z_v = +5
+}
+else if (event.key == 'w'){
+    
+    camera_z_v = -5
+}
+else if (event.key == 'j'){
+  
+     angle_acc = -angle_acc_max
+}
+else if (event.key == 'l'){
+    
+   angle_acc = +angle_acc_max
+}
+
+});
+
+window.addEventListener('keyup',(event)=>{
+
+    if (event.key == 'd'){
+    left = false;
+    camera_v = 0
+}
+
+else if (event.key == 'a'){
+    right = false;
+    camera_v = 0
+}
+
+else if (event.key == 's'){
+   
+    camera_z_v = 0
+}
+else if (event.key == 'w'){
+    
+    camera_z_v = 0
+}
+else if (event.key == 'j'){
+  
+    angle_acc = 0
+}
+else if (event.key == 'l'){
+    
+   angle_acc = 0
+}
+
+});
+
+function rectangle(edges, sides, pts){
+    this.acc = 2;
+    this.angle_acc = 0;
+    this.side_color = []
+    for(let i = 0; i<6;i++){
+        this.side_color[i] = randomHex();
+    }
+    this.update= function(){
+        
+        this.display();
+    }
+    this.display = function(){
+          for(e of sides){
+        ctx.beginPath()
+        
+        for(let i = 0; i<e.length;i++){
+            let a = convert_system(resize(rotate(translation(pts[e[i]], acc, camera_x, camera_z),camera_angle)))
+            let b =  convert_system(resize(rotate(translation(pts[e[i]%e.length], acc, camera_x, camera_z),camera_angle)))
+
+            if(i==0)
+                ctx.moveTo(a.x, a.y)
+            else
+                ctx.lineTo(a.x, a.y)
+        }
+        ctx.fillStyle = "green"; 
+        ctx.fill();
+       
+    }
+    
+    
+    }
 }
 
 function convert_system(p){
@@ -29,12 +152,14 @@ function convert_system(p){
 }
 
 function resize({x,y,z}){
-    return{
+
+         return{
         
         x:x/z,
         y: y/z,
-        z:z
+        z: z*(zfar/(zfar-znear)) - (zfar*znear/(zfar-znear))
     };
+ 
 
 }
 
@@ -61,6 +186,15 @@ ctx.stroke();
 
 }
 
+function make_plane(p1, p2){
+ctx.fillStyle = "#39FF14"; 
+
+ctx.moveTo(p1.x, p1.y);
+ctx.lineTo(p2.x, p2.y)
+
+
+}
+
 function rotate({x,y,z}, angleInRadians){
 const cosTheta = Math.cos(angleInRadians);
 const sinTheta = Math.sin(angleInRadians);
@@ -72,65 +206,60 @@ return {
     };
 }
 
-const pts = [
-    {x: 0.5, y: 0.5, z:0.5},
-    {x: -0.5, y: 0.5, z:0.5},
-    {x: -0.5, y: -0.5, z:0.5},
-    {x: 0.5, y: -0.5, z:0.5},
-    {x: 0.5, y: 0.5, z:-0.5},
-    {x: -0.5, y: 0.5, z:-0.5},
-    {x: -0.5, y: -0.5, z:-0.5},
-    {x: 0.5, y: -0.5, z:-0.5}
-
-
-]
-
-const edges = [
-    [0,1,2,3],
-    [4,5,6,7],
-    [0,4],
-    [1,5],
-    [2,6],
-    [3,7]
-]
-
-function translation(p, dt){
+function translation(p, dt, cp_x, cp_z){
 return{
-    x: p.x,
+    x: p.x+cp_x,
     y: p.y, 
-    z: p.z + dt
+    z: p.z + dt + cp_z 
 }
 }
 
-let acc = 2
+// function translation_r(p, dt, cp){
+// return{
+//     x: p.x+cp,
+//     y: p.y, 
+//     z: p.z +dt
+// }
+// }
+
+
+// function translation_l(p, dt, cp){
+// return{
+//     x: p.x+cp,
+//     y: p.y, 
+//     z: p.z+dt
+// }
+// }
 
 const FPS = 60
 dt = 1/FPS
 let angle = 0;
 
+for(let i = 0; i<6; i++){
+    cubes.push(new rectangle(edges, sides, pointSets[i]))
+}
+
 function animate(time) {
         
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    angle += 0.5*Math.PI*dt
+    // if(left)
+    //     angle += angle_acc*dt
+    // else if(right)
+    //     angle -= angle_acc*dt
 
-    // acc = acc+ dt*0.5
+    for(let a = 0; a<cubes.length;a++){
+        cubes[a].update();
+    }
+
+    // acc += dt*0.5
 
     // for(p of pts){
     //     point(convert_system(resize(translation(p, acc))));
     // }
-
-    for(e of edges){
-        for(let i = 0; i<e.length;i++){
-            let a = convert_system(resize(translation(rotate(pts[e[i]], angle), acc)))
-            let b = convert_system(resize(translation(rotate(pts[e[(i+1)%e.length]],angle), acc)))
-            point(convert_system(resize(translation(rotate(pts[e[i]], angle), acc))))
-            make_line(a,b);
-        }
-    }
-
-
-
+    camera_x+= camera_v*dt
+    camera_z+= camera_z_v*dt
+    camera_angle += angle_acc*dt
     requestAnimationFrame(animate);
 }
 
