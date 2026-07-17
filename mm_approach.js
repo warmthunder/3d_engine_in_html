@@ -1,51 +1,47 @@
 const canvas = document.getElementById('engine screen');
 const ctx = canvas.getContext('2d');
 
-let right = false;
-let left = false;
-
-
-let acc = 2
-let angle_acc_max = Math.PI*.5
-let angle_acc = 0
-let camera_angle = 0
+// canvas.width = 1000
+// canvas.height = 1000
 
 let znear = 1
-let zfar = 10
+let zfar = 1000
 
+let q = zfar/(zfar-znear)
+let a = 1
+let theta = 45
+let f = 1/Math.tan(theta*Math.PI/180)
 
-let player_speed = 5
+let translated = {
+    x:0,
+    y:0,
+    z:3
+}
+
+// let object_pos = [x, y, z, 1]
+let const_part = [
+    [a*f,0,0,0],
+    [0,f,0,0],
+    [0,0,q, 1],
+    [0, 0, -znear*q,0]
+]
 
 let cubes = []
 
-let camera_x = -2
-let camera_v = 0
+let angle_x = 0
+let angle_z = 0
+let angle_v = Math.PI*.1
+// let angle_v = 0
 
-let camera_z = 2;
-let camera_z_v = 0;
 
-// function resizeCanvas() {
-//   // Update internal drawing buffer to match window size
-//   canvas.width = window.innerWidth;
-//   canvas.height = window.innerHeight;
-  
-// }
-
-// resizeCanvas();
-
-// window.addEventListener('resize', resizeCanvas);
-
-canvas.width = 700
-canvas.height = 700
-
-const randomHex = () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-
-function point(p){
- const s = 30;
- ctx.fillStyle = '#ff4757';
- ctx.fillRect(p.x-s/2,p.y-s/2, s, s)
-
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 }
+
+resizeCanvas();
+
+window.addEventListener('resize', resizeCanvas);
 
 window.addEventListener('keydown',(event)=>{
 
@@ -109,41 +105,54 @@ else if (event.key == 'l'){
 
 });
 
-function rectangle(edges, sides, pts){
-    this.acc = 2;
-    this.angle_acc = 0;
-    this.side_color = []
-    for(let i = 0; i<6;i++){
-        this.side_color[i] = randomHex();
-    }
-    this.update= function(){
-        
-        this.display();
-    }
-    this.display = function(){
-          for(e of sides){
-        ctx.beginPath()
-        
-        for(let i = 0; i<e.length;i++){
-            let a = convert_system(resize(rotate(translation(pts[e[i]], acc, camera_x, camera_z),camera_angle)))
-            let b =  convert_system(resize(rotate(translation(pts[e[i]%e.length], acc, camera_x, camera_z),camera_angle)))
+function rotate({x,y,z}, angleInRadians_z, angleInRadians_x){
+const cx = Math.cos(angleInRadians_x);
+const sx = Math.sin(angleInRadians_x);
 
-            if(i==0)
-                ctx.moveTo(a.x, a.y)
-            else
-                ctx.lineTo(a.x, a.y)
-        }
-        ctx.fillStyle = "green"; 
-        ctx.fill();
-       
-    }
+const cz = Math.cos(angleInRadians_z);
+const sz = Math.sin(angleInRadians_z);
+
+let rx = [
+    [1, 0, 0],
+    [0, cx, -sx],
+    [0, sx, cx]
+]
     
-    
-    }
+let rz = [
+    [cz, -sz, 0],
+    [sz,  cz, 0],
+    [0,   0,  1]
+]
+
+let R = matrix_multiplication(rx, rz)
+
+let points = [
+    [x],
+    [y],
+    [z]
+]
+
+let ans = matrix_multiplication(R,points)
+
+return {
+        x: ans[0][0],
+        y: ans[1][0],
+        z: ans[2][0]
+    };
+}
+
+function resize(p){
+    let pos = [[p.x, p.y, p.z, 1]]
+    let result = matrix_multiplication(pos, const_part)
+
+    return{
+        x:result[0][0]/result[0][3],
+        y:result[0][1]/result[0][3],
+        z:result[0][2]/result[0][3]
+    };
 }
 
 function convert_system(p){
-
     return {
         x: ((p.x + 1) / 2) * canvas.width,
         y: ((p.y + 1) / 2) * canvas.height,
@@ -151,115 +160,108 @@ function convert_system(p){
     };
 }
 
-function resize({x,y,z}){
-
-         return{
-        
-        x:x/z,
-        y: y/z,
-        z: z*(zfar/(zfar-znear)) - (zfar*znear/(zfar-znear))
-    };
- 
-
-}
-
-// function make_line(points, pts){
-// ctx.strokeStyle = "#ff4757"; 
-// ctx.lineWidth = 20;
-// for(let j = 0; j<points.length; j++){
-//     for(let i = 0; i<j.length; i++){
-//         ctx.beginPath();
-//         ctx.moveTo(pts[points[i]].x, pts[points[i]].y);
-//         ctx.lineTo(pts[points[(i+1)%points.length]].x, pts[points[(i+1)%points.length]].y)
-//         ctx.stroke();
-//     }
-// }
-// }
-
 function make_line(p1, p2){
-ctx.strokeStyle = "#ff4757"; 
-ctx.lineWidth = 10;
-ctx.beginPath();
-ctx.moveTo(p1.x, p1.y);
-ctx.lineTo(p2.x, p2.y)
-ctx.stroke();
-
+    ctx.strokeStyle = "#ff4757"; 
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y)
+    ctx.stroke();
 }
 
-function make_plane(p1, p2){
-ctx.fillStyle = "#39FF14"; 
-
-ctx.moveTo(p1.x, p1.y);
-ctx.lineTo(p2.x, p2.y)
-
-
+function point(p){
+    const s = 30;
+    // ctx.fillStyle = '#ff4757';
+    ctx.fillRect(p.x-s/2,p.y-s/2, s, s)
 }
 
-function rotate({x,y,z}, angleInRadians){
-const cosTheta = Math.cos(angleInRadians);
-const sinTheta = Math.sin(angleInRadians);
-    
-return {
-        x: x * cosTheta - z * sinTheta,
-        z: x * sinTheta + z * cosTheta,
-        y: y
-    };
-}
-
-function translation(p, dt, cp_x, cp_z){
+function translation(v1){
 return{
-    x: p.x+cp_x,
-    y: p.y, 
-    z: p.z + dt + cp_z 
+    x:v1.x,
+    y:v1.y,
+    z:v1.z+3
 }
 }
 
-// function translation_r(p, dt, cp){
-// return{
-//     x: p.x+cp,
-//     y: p.y, 
-//     z: p.z +dt
-// }
-// }
-
-
-// function translation_l(p, dt, cp){
-// return{
-//     x: p.x+cp,
-//     y: p.y, 
-//     z: p.z+dt
-// }
-// }
+let colors = [
+    "#FF000080",
+    "#00FF0080",
+    "#0000FF80",
+    "#FFFF0080",
+    "#00FFFF80",
+    "#FF00FF80",
+    "#00000080",
+    "#FFFFFF80"
+]
+let z = 0
+for(e of tri_sides){
+    console.log(z)
+            let a = translation(rotate(pts_1[e[0]],angle_x, angle_z),translated)
+            let b = translation(rotate(pts_1[e[1]],angle_x, angle_z),translated)
+            let c = translation(rotate(pts_1[e[2]],angle_x, angle_z),translated)
+            const normal = cross_product(a,b,c)
+            console.log(normal)
+            z++
+}
 
 const FPS = 60
 dt = 1/FPS
 let angle = 0;
+let camera_p = {x:0, y:0, z:0}
+function rectangle(edges, sides, pts){
+    this.update= function(){
+        this.display();
+    }
+    this.display = function(){
+        // let i = 0
+        // for(p of pts){
+        //     ctx.fillStyle = colors[i]
+        //     point(convert_system(resize(translation((p)))))
+        //     i++;
+        // }
+        
+        for(e of tri_sides){
+            let a = translation(rotate(pts[e[0]],angle_x, angle_z),translated)
+            let b = translation(rotate(pts[e[1]],angle_x, angle_z),translated)
+            let c = translation(rotate(pts[e[2]],angle_x, angle_z),translated)
+            const normal = cross_product(a,b,c)
+            
+            // const center = {
+            //     x: (a.x + b.x + c.x) / 3,
+            //     y: (a.y + b.y + c.y) / 3,
+            //     z: (a.z + b.z + c.z) / 3
+            // };
 
-for(let i = 0; i<6; i++){
-    cubes.push(new rectangle(edges, sides, pointSets[i]))
+            // const tip = {
+            //     x: center.x + normal.x * 0.3,
+            //     y: center.y + normal.y * 0.3,
+            //     z: center.z + normal.z * 0.3
+            // };
+
+            // make_line(
+            //     convert_system(resize(center)),
+            //     convert_system(resize(tip))
+            // );
+
+            if(normal.x*b.x + normal.y*b.y + normal.z*b.z <0){
+            make_line(convert_system(resize(a)),convert_system(resize(b)))
+            make_line(convert_system(resize(b)),convert_system(resize(c)))
+            make_line(convert_system(resize(c)),convert_system(resize(a)))
+            }
+    }
+}
 }
 
-function animate(time) {
-        
+cubes.push(new rectangle(edges, sides, pts_1))
+
+function animate(time) {        
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // if(left)
-    //     angle += angle_acc*dt
-    // else if(right)
-    //     angle -= angle_acc*dt
+    cubes[0].update();
+    angle_x+=angle_v*dt
+    angle_z+=angle_v*dt
 
-    for(let a = 0; a<cubes.length;a++){
-        cubes[a].update();
-    }
 
-    // acc += dt*0.5
-
-    // for(p of pts){
-    //     point(convert_system(resize(translation(p, acc))));
-    // }
-    camera_x+= camera_v*dt
-    camera_z+= camera_z_v*dt
-    camera_angle += angle_acc*dt
     requestAnimationFrame(animate);
 }
 
