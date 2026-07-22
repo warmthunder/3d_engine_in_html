@@ -7,6 +7,9 @@ const ctx = canvas.getContext('2d');
 let znear = 1
 let zfar = 1000
 
+const FPS = 60
+dt = 1/FPS
+
 let q = zfar/(zfar-znear)
 let a = 1
 let theta = 45
@@ -17,6 +20,15 @@ let camera_velocity = {
     y:0,
     z:0
 }
+
+let forwards = 0
+let sideways = 0
+let rot_x = 0
+
+// y axis rotation
+let yaw = 0
+// x axis rotation
+let pitch = 0
 
 // let object_pos = [x, y, z, 1]
 let const_part = [
@@ -44,7 +56,7 @@ let vtarget = {
     z:1
 }
 
-let camera_pos = {x:0, y:0, z:4};
+let camera_pos = {x:0, y:0, z:20};
 const camera_j = {x:0, y:1, z:0}
 
 
@@ -62,35 +74,34 @@ window.addEventListener('resize', resizeCanvas);
 window.addEventListener('keydown',(event)=>{
 
 if (event.key == 'd'){
-
-    camera_velocity.x = -5
+    sideways=-1
 }
 
 else if (event.key == 'a'){
 
-    camera_velocity.x = +5
+    sideways=+1
 }
 
 else if (event.key == 's'){
-  
-    camera_velocity.z = +5
+    forwards = +1
+    
 }
 else if (event.key == 'w'){
-    
-    camera_velocity.z = -5
+    forwards = -1
 }
 // rotation
 else if (event.key == 'j'){
-    rotation_vec.x = 3
+    rotation_vec.y = Math.PI
+    
 }
 else if (event.key == 'l'){
-    rotation_vec.x = -3
+    rotation_vec.y = -Math.PI
 }
 else if (event.key == 'i'){
-    rotation_vec.y = 3
+    rotation_vec.x= Math.PI
 }
 else if (event.key == 'k'){
-    rotation_vec.y = -3
+    rotation_vec.x = -Math.PI
 }
 
 });
@@ -99,34 +110,34 @@ window.addEventListener('keyup',(event)=>{
 
     if (event.key == 'd'){
    
-    camera_velocity.x = 0
+    sideways=0
 }
 
 else if (event.key == 'a'){
   
-    camera_velocity.x = 0
+    sideways=0
 }
 
 else if (event.key == 's'){
    
-    camera_velocity.z = 0
+    forwards = 0
 }
 else if (event.key == 'w'){
     
-    camera_velocity.z = 0
+    forwards = 0
 }
 // rotation (x = yaw)
 else if (event.key == 'j'){
-  rotation_vec.x = 0
+  rotation_vec.y = 0
 }
 else if (event.key == 'l'){
-    rotation_vec.x = 0
+    rotation_vec.y = 0
 }
 else if (event.key == 'i'){
-    rotation_vec.y = 0
+    rotation_vec.x = 0
 }
 else if (event.key == 'k'){
-    rotation_vec.y = 0
+    rotation_vec.x = 0
 }
 
 });
@@ -143,6 +154,52 @@ function resize(p){
     };
 }
 
+// rotation
+function rotate({x,y,z},angleInRadians_x, angleInRadians_y,angleInRadians_z,){
+    const cx = Math.cos(angleInRadians_x);
+    const sx = Math.sin(angleInRadians_x);
+
+    const cz = Math.cos(angleInRadians_z);
+    const sz = Math.sin(angleInRadians_z);
+
+    const cy = Math.cos(angleInRadians_y);
+    const sy = Math.sin(angleInRadians_y);
+
+        let rx = [
+        [1, 0, 0],
+        [0, cx, -sx],
+        [0, sx, cx]
+    ]
+        
+    let rz = [
+        [cz, -sz, 0],
+        [sz,  cz, 0],
+        [0,   0,  1]
+    ]
+
+    let ry = [
+        [cy,0,sy],
+        [0,1,0],
+        [-sy,0,cy]
+    ]
+
+    let R = matrix_multiplication(ry, rx)
+    R = matrix_multiplication(R,rz)
+    let points = [
+        [x],
+        [y],
+        [z]
+    ]
+
+    let ans = matrix_multiplication(R,points)
+
+return {
+        x: ans[0][0],
+        y: ans[1][0],
+        z: ans[2][0]
+    };
+}
+
 // changing coordinate systems
 function convert_system(p){
     return {
@@ -156,21 +213,20 @@ function convert_system(p){
 // position vector - where object should be
 // target vector forward vector for that object
 //  up vector
-function lookatmatrix(world_prev_frame, newloc, j){
+function lookatmatrix(positionvec, targetvec, j){
 
     // k
-    let k = vec_sub(world_prev_frame, newloc)
+    let k = vec_sub(targetvec,positionvec)
     k= normalize(k)
-
     
-    // i
+    
+    // j
     let axischange = vec_mul(k,dot_product(k,j))
     let jnew = vec_sub(j, axischange)
     jnew = normalize(jnew)
 
-    // j
+    // i
     let i =  normalize(cross_product_vec(k,jnew))
-
 
     // converting LAM to inverse
     let converted_LAM = [
@@ -179,12 +235,11 @@ function lookatmatrix(world_prev_frame, newloc, j){
         [i.z, jnew.z, k.z, 0],
         [-1.0*dot_product(camera_pos,i), -1.0*dot_product(camera_pos,jnew), -1.0*dot_product(camera_pos,k), 1]
     ]
+    // camera_pos is just the translation vector
     return converted_LAM
 
 }
 
-const FPS = 60
-dt = 1/FPS
 function rectangle(sides, pts){
     this.update= function(){
         // painters algo
@@ -195,6 +250,26 @@ function rectangle(sides, pts){
 
             return zb - za;
         });
+        if(forwards>0)
+            camera_pos = obj_addition(camera_pos, vec_mul(lookdir, 5*dt))
+        else if (forwards<0)
+            camera_pos = vec_sub(camera_pos, vec_mul(lookdir, 5*dt))
+
+       let right = normalize(cross_product_vec(lookdir, camera_j))
+        if(sideways<0)
+        camera_pos = obj_addition(camera_pos, vec_mul(right, -5*dt))
+        else if(sideways>0)
+        camera_pos = obj_addition(camera_pos, vec_mul(right, 5*dt))
+
+        yaw   += rotation_vec.y*dt
+        pitch += rotation_vec.x*dt
+        lookdir = rotate({x:0,y:0,z:1},pitch, yaw,0)
+
+        // camera_pos is just the translation vector
+        camera_pos = obj_addition(camera_pos, vec_mul(camera_velocity,dt))
+        
+        // vtarget is where the world is looking
+        vtarget = obj_addition(lookdir, camera_pos)
         this.display();
     }
     this.display = function(){
@@ -249,10 +324,6 @@ for(let i = 0; i<1; i++){
 
 function animate(time) {       
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    camera_pos = obj_addition(camera_pos, vec_mul(camera_velocity,dt))
-    vtarget = obj_addition(lookdir, camera_pos)
-    lookdir = obj_addition(lookdir,vec_mul(rotation_vec,dt))
     for(let a = 0; a<cubes.length;a++){
         cubes[a].update();
     }
