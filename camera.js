@@ -56,6 +56,9 @@ let vtarget = {
     z:1
 }
 
+let mousex = 0
+let mousey = 0
+
 let camera_pos = {x:0, y:0, z:20};
 const camera_j = {x:0, y:1, z:0}
 
@@ -70,6 +73,20 @@ function resizeCanvas() {
 resizeCanvas();
 
 window.addEventListener('resize', resizeCanvas);
+
+canvas.addEventListener("click", () => {
+  canvas.requestPointerLock();
+});
+
+
+
+window.addEventListener('mousemove',(event)=>{
+    if(document.pointerLockElement === canvas)
+	{
+  yaw -= event.movementX/canvas.width
+  pitch -= event.movementY/canvas.height
+    }
+})
 
 window.addEventListener('keydown',(event)=>{
 
@@ -89,22 +106,13 @@ else if (event.key == 's'){
 else if (event.key == 'w'){
     forwards = -1
 }
-// rotation
-else if (event.key == 'j'){
-    rotation_vec.y = Math.PI
+
+else if (event.key == 'Escape'){
+    document.exitPointerLock()
     
 }
-else if (event.key == 'l'){
-    rotation_vec.y = -Math.PI
-}
-else if (event.key == 'i'){
-    rotation_vec.x= Math.PI
-}
-else if (event.key == 'k'){
-    rotation_vec.x = -Math.PI
-}
-
 });
+
 
 window.addEventListener('keyup',(event)=>{
 
@@ -125,22 +133,7 @@ else if (event.key == 's'){
 else if (event.key == 'w'){
     
     forwards = 0
-}
-// rotation (x = yaw)
-else if (event.key == 'j'){
-  rotation_vec.y = 0
-}
-else if (event.key == 'l'){
-    rotation_vec.y = 0
-}
-else if (event.key == 'i'){
-    rotation_vec.x = 0
-}
-else if (event.key == 'k'){
-    rotation_vec.x = 0
-}
-
-});
+}})
 
 // the actual projection
 function resize(p){
