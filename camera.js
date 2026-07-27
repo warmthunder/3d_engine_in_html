@@ -233,15 +233,78 @@ function lookatmatrix(positionvec, targetvec, j){
 
 }
 
+// function line(x,y,m){
+
+// }
+
+function lines_intersection({x1,y1},{x2,y2},{x3,y3},{x4,y4}){
+    let m1 = (y2-y1)/(x2-x1)
+
+    let m2 = (y4-y3)/(x4-x3)
+
+    if(m1==m2 || m1/m2==0 || m2/m1==0)
+        return {x:-1,y:-1}
+
+    let ix = (m1*x1 - m2*x3 + y3 - y1) / (m1-m2)
+    let iy = m1*x1 - m1*ix + y1
+
+    return {x:ix,y:iy}
+}
+
+function inside(p1,c1,c2){
+    if(p1.x<c1.x && p1.x <c2.x)
+        return true
+    return false
+}
+
+function clipping(p1,p2,p3,c1,c2){
+    // all inside
+    if(inside(p1,c1,c2) && inside(p2,c1,c2) && inside(p3,c1,c2)){
+        return [p1,p2,p3]
+    }
+    // two inside
+    else if((inside(p1,c1,c2) && inside(p2,c1,c2))|| (inside(p2,c1,c2) && inside(p3,c1,c2)) || inside(p3,c1,c2) && inside(p1,c1,c2)){
+        if ((inside(p3,c1,c2) && inside(p1,c1,c2)))
+        {
+            return [[p1,lines_intersection(p1,p2,c1,c2),p3],[lines_intersection(p1,p2,c1,c2),lines_intersection(p2,p3,c1,c2),p3] ]
+        }
+        else if ((inside(p2,c1,c2) && inside(p3,c1,c2)))
+        {
+            return [[lines_intersection(p1,p2,c1,c2),p2,p3],[lines_intersection(p1,p2,c1,c2),p3,lines_intersection(p3,p1,c1,c2)] ]
+        }
+        else if ((inside(p1,c1,c2) && inside(p2,c1,c2)))
+        {
+            return [[p1,p2,lines_intersection(p2,p3,c1,c2)],[lines_intersection(p2,p3,c1,c2),lines_intersection(p3,p1,c1,c2),p1] ]
+        }
+    }
+    // one inside
+    else if(inside(p1,c1,c2) || inside(p2,c1,c2) || inside(p3,c1,c2)){
+        if(inside(p1,c1,c2)){
+            return[p1,lines_intersection(p1,p2,c1,c2),lines_intersection(p1,p3,c1,c2)]
+        }
+        else if(inside(p2,c1,c2)){
+            return[lines_intersection(p1,p2,c1,c2),p2,lines_intersection(p2,p3,c1,c2)]
+        }
+        else if(inside(p3,c1,c2)){
+            return[lines_intersection(p1,p3,c1,c2),lines_intersection(p2,p3,c1,c2),p3]
+        }
+    }
+
+    // none inside
+
+    return -1
+}
+
 function rectangle(sides, pts){
     this.update= function(){
         // painters algo
+        // add transformed points here
             const transformed = pts
             sides.sort((a,b) => {
             const za = (transformed[a[0]].z + transformed[a[1]].z + transformed[a[2]].z) / 3;
             const zb = (transformed[b[0]].z + transformed[b[1]].z + transformed[b[2]].z) / 3;
 
-            return zb - za;
+            return za-zb;
         });
         if(forwards>0)
             camera_pos = obj_addition(camera_pos, vec_mul(lookdir, 5*dt))
@@ -292,17 +355,24 @@ function rectangle(sides, pts){
                 y:c_old[0][1],
                 z:c_old[0][2]
             }            
+
             let normal = cross_product(a,b,c)
             // solid
             normal = normalize(normal)
-            let cameraray = a
-            const dotp = dot_product(normalize(cameraray),normal)
+            const dotp = dot_product(normalize(b),normal)
             if(dotp >0){
+                a = convert_system(resize(a))
+                b = convert_system(resize(b))
+                c = convert_system(resize(c))
+                let clipped = clipping(a,b,c,{x:canvas.width,y:0},{x:canvas.width,y:canvas.height})
+                ac = clipped[0]
+                bc = clipped[1]
+                cc = clipped[2]
                 ctx.beginPath()
-                ctx.moveTo(convert_system(resize(a)).x, convert_system(resize(a)).y)
-                ctx.lineTo(convert_system(resize(b)).x, convert_system(resize(b)).y)
-                ctx.lineTo(convert_system(resize(c)).x, convert_system(resize(c)).y)
-                ctx.lineTo(convert_system(resize(a)).x, convert_system(resize(a)).y)
+                ctx.moveTo(ac.x, ac.y)
+                ctx.lineTo(bc.x, bc.y)
+                ctx.lineTo(cc.x, cc.y)
+                ctx.lineTo(ac.x, ac.y)
                 let color = Math.abs(dotp)*255
                 ctx.fillStyle = `rgb(${color},${color},${color})`;
                 ctx.fill();
