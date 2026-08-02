@@ -268,9 +268,78 @@ function inside(p1,c1,c2){
     return false
 }
 
-function clipping(p1,p2,p3,c1,c2){
-  
-    return 0
+// clipping points form the xy plane
+function clipping_xy(p1,p2,p3){
+    // let zvalue = 1 //lookdir.z + 1
+    // let m = {
+    //     x:p2.x-p1.x,
+    //     y:p2.y-p1.y,
+    //     z:p2.z-p1.z
+    // }
+    // if((m.z == 0)){
+    //     return;
+    // }
+    // let t = (zvalue-p1.z)/(p2.z-p1.z)
+    // return [p1.z>zvalue?p1:p2,{x:m.x *t +p1.x,y:m.y*t+p1.y,z:m.z*t+p1.z }]
+     if(p1&&p2&&p3){
+    let zvalue = -1//lookdir.z + 1
+    if(p1.z <=zvalue&& p2.z <=zvalue&& p3.z <=zvalue){
+        return[p1,p2,p3];
+    }
+    return [];   
+}
+  return [];   
+}
+
+// slope is {1,0,1}
+// distance of point from plane = slope dot_prod point
+function clipping_xzL(p1,p2,p3){
+    if(p1&&p2&&p3){
+   let value1 = dot_product(p1,{x:1,y:0,z:1})
+   let value2 = dot_product(p2,{x:1,y:0,z:1})
+   let value3 = dot_product(p3,{x:1,y:0,z:1})
+    if(value1 <=0&& value2 <=0&& value3 <=0){
+        return[p1,p2,p3];
+    }
+    return [];   
+}
+return[];
+}
+function clipping_xzR(p1,p2,p3){
+     if(p1&&p2&&p3){
+   let value1 = dot_product(p1,{x:-1,y:0,z:1})
+   let value2 = dot_product(p2,{x:-1,y:0,z:1})
+   let value3 = dot_product(p3,{x:-1,y:0,z:1})
+    if(value1 <=0&& value2 <=0&& value3 <=0){
+        return[p1,p2,p3];
+    }
+    return [];   
+}
+return[];
+}
+function clipping_yzR(p1,p2,p3){
+    if(p1&&p2&&p3){
+   let value1 = dot_product(p1,{x:0,y:1,z:1})
+   let value2 = dot_product(p2,{x:0,y:1,z:1})
+   let value3 = dot_product(p3,{x:0,y:1,z:1})
+    if(value1 <=0&& value2 <=0&& value3 <=0){
+        return[p1,p2,p3];
+    }
+    return [];   
+}
+return[];
+}
+function clipping_yzL(p1,p2,p3){
+      if(p1&&p2&&p3){
+   let value1 = dot_product(p1,{x:0,y:-1,z:1})
+   let value2 = dot_product(p2,{x:0,y:-1,z:1})
+   let value3 = dot_product(p3,{x:0,y:-1,z:1})
+    if(value1 <=0&& value2 <=0&& value3 <=0){
+        return[p1,p2,p3];
+    }
+    return [];   
+    }
+return[];
 }
 
 function rectangle(sides, pts){
@@ -306,6 +375,7 @@ function rectangle(sides, pts){
         vtarget = obj_addition(lookdir, camera_pos)
         this.display();
     }
+    let clipped = []
     this.display = function(){
         for(e of sides){
             matview = lookatmatrix(camera_pos,vtarget, camera_j) 
@@ -333,6 +403,19 @@ function rectangle(sides, pts){
                 y:c_old[0][1],
                 z:c_old[0][2]
             }            
+            // console.log(a)
+            clipped = clipping_xy(a,b,c)
+            clipped = clipping_xzL(clipped[0],clipped[1],clipped[2])
+            clipped = clipping_xzR(clipped[0],clipped[1],clipped[2])
+            clipped = clipping_yzR(clipped[0],clipped[1],clipped[2])
+            clipped = clipping_yzR(clipped[0],clipped[1],clipped[2])
+            // consolse.log(clipped)
+            // debugger
+            if(clipped.length == 0)
+                continue;
+            a = clipped[0]
+            b = clipped[1]
+            c = clipped[2]
 
             let normal = cross_product(a,b,c)
             // solid
@@ -352,7 +435,7 @@ function rectangle(sides, pts){
                 ctx.lineTo(cc.x, cc.y)
                 ctx.lineTo(ac.x, ac.y)
                 let color = Math.abs(dotp)*255
-                ctx.fillStyle = `rgb(${color},${color},${color})`;
+                ctx.fillStyle = `rgba(${color},${color},${color},${1.0})`;
                 ctx.fill();
                 
             }
