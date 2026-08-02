@@ -278,7 +278,7 @@ function rectangle(edges, sides, pts){
 //     cubes.push(new rectangle(edges, sides, pointSets[i]))
 // }
 
-cubes.push(new rectangle(edges, sides, vs))
+cubes.push(new rectangle(edges, fs, vs))
 function animate(time) {        
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 

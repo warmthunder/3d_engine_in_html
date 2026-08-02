@@ -3,8 +3,8 @@
 
 int main(void)
 {
-    FILE *fptr = fopen("FinalBaseMesh.obj", "r");
-    FILE *out  = fopen("humanmesh.js", "w");
+    FILE *fptr = fopen("axis.obj", "r");
+    FILE *out  = fopen("axis.js", "w");
 
     if (fptr == NULL || out == NULL) {
         printf("Couldn't open file.\n");
@@ -32,7 +32,7 @@ int main(void)
 
             fprintf(out,
                     "[%d,%d,%d],\n",
-                    a , b , c );
+                    a-1 , b-1 , c-1 );
         }
     }
 

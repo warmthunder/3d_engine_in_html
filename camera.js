@@ -198,10 +198,15 @@ function convert_system(p){
     return {
         x: ((p.x + 1) / 2) * canvas.width,
         y: ((p.y + 1) / 2) * canvas.height,
-        z: p.z
+    
     };
 }
 
+function point(p){
+    const s = 30;
+    // ctx.fillStyle = '#ff4757';
+    ctx.fillRect(p.x-s/2,p.y-s/2, s, s)
+}
 
 // position vector - where object should be
 // target vector forward vector for that object
@@ -237,19 +242,25 @@ function lookatmatrix(positionvec, targetvec, j){
 
 // }
 
-function lines_intersection({x1,y1},{x2,y2},{x3,y3},{x4,y4}){
-    let m1 = (y2-y1)/(x2-x1)
+function lines_intersection(p1,p2,p3,p4){
 
-    let m2 = (y4-y3)/(x4-x3)
+    let m1 = (p2.y-p1.y)/(p2.x-p1.x)
 
-    if(m1==m2 || m1/m2==0 || m2/m1==0)
+    // let m2 = (p4.y-p3.y)/(p4.x-p3.x)
+
+
+    if(m1 == 0 || m1 == Infinity)
         return {x:-1,y:-1}
 
-    let ix = (m1*x1 - m2*x3 + y3 - y1) / (m1-m2)
-    let iy = m1*x1 - m1*ix + y1
+    // let ix = (m1*p1.x - m2*p3.x + p3.y - p1.y) / (m1-m2)
+    let ix = canvas.width
+
+    let iy = m1*ix - m1*p1.x + p1.y
+
 
     return {x:ix,y:iy}
 }
+
 
 function inside(p1,c1,c2){
     if(p1.x<c1.x && p1.x <c2.x)
@@ -258,41 +269,8 @@ function inside(p1,c1,c2){
 }
 
 function clipping(p1,p2,p3,c1,c2){
-    // all inside
-    if(inside(p1,c1,c2) && inside(p2,c1,c2) && inside(p3,c1,c2)){
-        return [p1,p2,p3]
-    }
-    // two inside
-    else if((inside(p1,c1,c2) && inside(p2,c1,c2))|| (inside(p2,c1,c2) && inside(p3,c1,c2)) || inside(p3,c1,c2) && inside(p1,c1,c2)){
-        if ((inside(p3,c1,c2) && inside(p1,c1,c2)))
-        {
-            return [[p1,lines_intersection(p1,p2,c1,c2),p3],[lines_intersection(p1,p2,c1,c2),lines_intersection(p2,p3,c1,c2),p3] ]
-        }
-        else if ((inside(p2,c1,c2) && inside(p3,c1,c2)))
-        {
-            return [[lines_intersection(p1,p2,c1,c2),p2,p3],[lines_intersection(p1,p2,c1,c2),p3,lines_intersection(p3,p1,c1,c2)] ]
-        }
-        else if ((inside(p1,c1,c2) && inside(p2,c1,c2)))
-        {
-            return [[p1,p2,lines_intersection(p2,p3,c1,c2)],[lines_intersection(p2,p3,c1,c2),lines_intersection(p3,p1,c1,c2),p1] ]
-        }
-    }
-    // one inside
-    else if(inside(p1,c1,c2) || inside(p2,c1,c2) || inside(p3,c1,c2)){
-        if(inside(p1,c1,c2)){
-            return[p1,lines_intersection(p1,p2,c1,c2),lines_intersection(p1,p3,c1,c2)]
-        }
-        else if(inside(p2,c1,c2)){
-            return[lines_intersection(p1,p2,c1,c2),p2,lines_intersection(p2,p3,c1,c2)]
-        }
-        else if(inside(p3,c1,c2)){
-            return[lines_intersection(p1,p3,c1,c2),lines_intersection(p2,p3,c1,c2),p3]
-        }
-    }
-
-    // none inside
-
-    return -1
+  
+    return 0
 }
 
 function rectangle(sides, pts){
@@ -364,10 +342,10 @@ function rectangle(sides, pts){
                 a = convert_system(resize(a))
                 b = convert_system(resize(b))
                 c = convert_system(resize(c))
-                let clipped = clipping(a,b,c,{x:canvas.width,y:0},{x:canvas.width,y:canvas.height})
-                ac = clipped[0]
-                bc = clipped[1]
-                cc = clipped[2]
+
+                ac = a
+                bc = b
+                cc = c
                 ctx.beginPath()
                 ctx.moveTo(ac.x, ac.y)
                 ctx.lineTo(bc.x, bc.y)
@@ -376,6 +354,7 @@ function rectangle(sides, pts){
                 let color = Math.abs(dotp)*255
                 ctx.fillStyle = `rgb(${color},${color},${color})`;
                 ctx.fill();
+                
             }
     }
 }

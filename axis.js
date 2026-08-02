@@ -1,4 +1,3 @@
-// model taken from https://github.com/OneLoneCoder/Javidx9/blob/master/ConsoleGameEngine/BiggerProjects/Engine3D/axis.obj
 let axis_v = [
 {x:-11.748000, y:-0.360000, z:1.268000},
 {x:-11.276000, y:-0.360000, z:1.268000},

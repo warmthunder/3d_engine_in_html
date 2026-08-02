@@ -41,22 +41,63 @@ function cross_product(a1,a2,a3){
   }
 }
 
-let p1 = {
-  x:3,
-  y:0,
-  z:1
+function cross_product_vec(v1,v2){
+return{
+    x:v1.y*v2.z - v1.z*v2.y,
+    y:v1.z*v2.x-v1.x*v2.z,
+    z:v1.x*v2.y-v1.y*v2.x
+  }
 }
 
-let p2 = {
-  x:4,
-  y:-2,
-  z:1
+function obj_addition(o1,o2){
+
+  return{
+    x:o1.x+o2.x,
+    y:o1.y+o2.y,
+    z:o1.z+o2.z
+  }
 }
 
-let p3 = {
-  x:5,
-  y:3,
-  z:-1
+function normalize(v1){
+if (v1.x**2 + v1.y**2 +v1.z**2 == 0){
+  return {
+    x: 0,
+    y: 0,
+    z: 0
+  }
+}
+return{
+  x:v1.x/(Math.sqrt(v1.x**2 + v1.y**2 +v1.z**2 )),
+  y:v1.y/(Math.sqrt(v1.x**2 + v1.y**2 +v1.z**2 )),
+  z:v1.z/(Math.sqrt(v1.x**2 + v1.y**2 +v1.z**2 ))
+}
 }
 
-console.log(cross_product(p1,p2,p3))
+function dot_product(v1, v2){
+return v1.x*v2.x + v2.y*v1.y + v1.z*v2.z;
+}
+
+function vec_sub(v1,v2){
+
+  return{
+    x:v1.x-v2.x,
+    y:v1.y-v2.y,
+    z:v1.z-v2.z,
+  };
+}
+
+function vec_mul(v1, k){
+return{
+  x:v1.x*k,
+  y:v1.y*k,
+  z:v1.z*k
+};
+}
+
+let v1 = {
+  x: 1,
+  y: 0,
+  z: 0
+}
+
+console.log(vec_mul(v1,dot_product(v1,{x:1,y:2,z:3})))

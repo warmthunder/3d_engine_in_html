@@ -38,17 +38,12 @@ let const_part = [
     [0, 0, -znear*q,0]
 ]
 
-let camera = {x:0, y:0, z:1};
-let camera_i = {x:1, y:0, z:0}
-let camera_j = {x:0, y:1, z:0}
-let camera_k = {x:0, y:0, z:1}
-
 let cubes = []
 
 let angle_x = Math.PI
 let angle_z = 0
-// let angle_v = Math.PI*.3
-let angle_v = 0
+let angle_v = Math.PI*.3
+// let angle_v = 0
 
 // fs.sort((a,b)=>{
 //     const za = (vs[a[0]].z + vs[a[1]].z + vs[a[2]].z)/3
@@ -226,15 +221,15 @@ let angle = 0;
 let camera_p = {x:0, y:0, z:0}
 function rectangle(edges, sides, pts){
     this.update= function(){
-            const transformed = pts.map(v =>
-            rotate(v, angle_x, angle_z)
-            );
-            tri_sides.sort((a, b) => {
-            const za = (transformed[a[0]].z + transformed[a[1]].z + transformed[a[2]].z) / 3;
-            const zb = (transformed[b[0]].z + transformed[b[1]].z + transformed[b[2]].z) / 3;
+        //     const transformed = pts.map(v =>
+        //     rotate(v, angle_x, angle_z)
+        //     );
+        //     tri_sides.sort((a, b) => {
+        //     const za = (transformed[a[0]].z + transformed[a[1]].z + transformed[a[2]].z) / 3;
+        //     const zb = (transformed[b[0]].z + transformed[b[1]].z + transformed[b[2]].z) / 3;
 
-            return zb - za;
-        });
+        //     return zb - za;
+        // });
         this.display();
     }
     this.display = function(){
@@ -257,7 +252,7 @@ function rectangle(edges, sides, pts){
             // make_line(convert_system(resize(b)),convert_system(resize(c)))
             // make_line(convert_system(resize(c)),convert_system(resize(a)))
             // }
-
+            
             // solid
             normal = normalize(normal)
             b = normalize(b)
@@ -268,12 +263,13 @@ function rectangle(edges, sides, pts){
                 ctx.lineTo(convert_system(resize(b)).x, convert_system(resize(b)).y)
                 ctx.lineTo(convert_system(resize(c)).x, convert_system(resize(c)).y)
                 ctx.lineTo(convert_system(resize(a)).x, convert_system(resize(a)).y)
-                let color = Math.abs(dotp)*255
-                ctx.fillStyle = `rgb(${color},${color},${color})`;
-               
+                // let color = Math.abs(dotp)*255
+                ctx.fillStyle = colors[i];
                 ctx.fill();
+                
             }
-            i++ 
+            i+=1/2
+            
     }
 }
 }

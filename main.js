@@ -24,19 +24,15 @@ let camera_v = 0
 let camera_z = 2;
 let camera_z_v = 0;
 
-// function resizeCanvas() {
-//   // Update internal drawing buffer to match window size
-//   canvas.width = window.innerWidth;
-//   canvas.height = window.innerHeight;
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
   
-// }
+}
 
-// resizeCanvas();
+resizeCanvas();
 
-// window.addEventListener('resize', resizeCanvas);
-
-canvas.width = 700
-canvas.height = 700
+window.addEventListener('resize', resizeCanvas);
 
 const randomHex = () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
@@ -121,29 +117,26 @@ function rectangle(edges, sides, pts){
         this.display();
     }
     this.display = function(){
-          for(e of sides){
-        ctx.beginPath()
+          for(e of tri_sides){
+        // ctx.beginPath()
         
         for(let i = 0; i<e.length;i++){
             let a = convert_system(resize(rotate(translation(pts[e[i]], acc, camera_x, camera_z),camera_angle)))
-            let b =  convert_system(resize(rotate(translation(pts[e[i]%e.length], acc, camera_x, camera_z),camera_angle)))
-
-            if(i==0)
-                ctx.moveTo(a.x, a.y)
-            else
-                ctx.lineTo(a.x, a.y)
+            let b =  convert_system(resize(rotate(translation(pts[e[(i+1)%e.length]], acc, camera_x, camera_z),camera_angle)))
+            make_line(a,b)
+            // if(i==0)
+            //     ctx.moveTo(a.x, a.y)
+            // else
+            //     ctx.lineTo(a.x, a.y)
         }
-        ctx.fillStyle = "green"; 
-        ctx.fill();
+        // ctx.fillStyle = "green"; 
+        // ctx.fill();
        
     }
-    
-    
     }
 }
 
 function convert_system(p){
-
     return {
         x: ((p.x + 1) / 2) * canvas.width,
         y: ((p.y + 1) / 2) * canvas.height,
@@ -152,15 +145,11 @@ function convert_system(p){
 }
 
 function resize({x,y,z}){
-
-         return{
-        
+         return{  
         x:x/z,
         y: y/z,
         z: z*(zfar/(zfar-znear)) - (zfar*znear/(zfar-znear))
     };
- 
-
 }
 
 // function make_line(points, pts){
@@ -183,7 +172,6 @@ ctx.beginPath();
 ctx.moveTo(p1.x, p1.y);
 ctx.lineTo(p2.x, p2.y)
 ctx.stroke();
-
 }
 
 function make_plane(p1, p2){
@@ -235,7 +223,7 @@ const FPS = 60
 dt = 1/FPS
 let angle = 0;
 
-for(let i = 0; i<6; i++){
+for(let i = 0; i<1; i++){
     cubes.push(new rectangle(edges, sides, pointSets[i]))
 }
 
