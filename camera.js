@@ -9,6 +9,7 @@ let zfar = 1000
 
 const FPS = 60
 dt = 1/FPS
+const EPS = 1e-6;
 
 let q = zfar/(zfar-znear)
 let a = 1
@@ -254,13 +255,14 @@ function clipping(p1,p2,p3){
 
     for(let i = 0;i<5;i++){
         let ans = []
-        for(p of newp)
-            ans.push(...cut_triangles(p,n[i],d[i]))
-        if(ans == null)
-            return 
-        // newp = []
-        // for(a of ans)
-        //     newp.push(ans)
+        // console.log(newp)
+        for(p of newp){
+            
+            let val = cut_triangles(p,n[i],d[i])
+            if(val == null)
+                return
+            ans.push(...val)
+        }
         newp = ans
         
     }
@@ -270,6 +272,9 @@ function clipping(p1,p2,p3){
 }
 
 function line_plane_intersection(p1,p2,n, d){
+    if(dot_product(vec_sub(p2,p1),n)==0 && dot_product(p1,n)+d==0){
+        return p1
+    }
     let t = (-d - dot_product(n,p1))/(dot_product(n,vec_sub(p2,p1)))
     // this is intersection
     return obj_addition(p1,vec_mul(vec_sub(p2,p1),t))
@@ -279,48 +284,50 @@ function line_plane_intersection(p1,p2,n, d){
 function cut_triangles(pts, n, d){
     // plane intersection
     // console.log(pts)
-    if(pts.length===1)
-        pts = pts[0]
-    console.log(pts)
-
-    let v1 = dot_product(pts[0],n)+d
-    let v2 = dot_product(pts[1],n)+d
-    let v3 = dot_product(pts[2],n)+d
-    let values = [v1,v2,v3]
-    let negative = []
-    let positive = []
-    let triad = []
-    for( let i =0; i<3;i++){
-        if(values[i]<=0)
-            negative.push(pts[i])
-        else
-            positive.push(pts[i]);
+        if(pts.length===1){
+            console.log(pts)
+            pts = pts[0]}
+        // console.log(pts)
+        
+        let v1 = dot_product(pts[0],n)+d
+        let v2 = dot_product(pts[1],n)+d
+        let v3 = dot_product(pts[2],n)+d
+        let values = [v1,v2,v3]
+        let negative = []
+        let positive = []
+        let triad = []
+        for( let i =0; i<3;i++){
+            if(values[i]<=EPS)
+                negative.push(pts[i])
+            else
+                positive.push(pts[i]);
+        }
+    // none outside
+    if(positive.length==0)
+        return [pts]
+    // one outside
+    else if(positive.length == 1){
+        let i1 = line_plane_intersection(positive[0],negative[0],n,d)
+        let i2 = line_plane_intersection(negative[1],positive[0],n,d)
+        // console.log(i1,i2)
+        triad.push([negative[0],negative[1],i2])
+        triad.push([negative[0],i2,i1])
+        // console.log(triad);
+        return triad
     }
-// none outside
-if(positive.length==0)
-    return [pts]
-// one outside
-else if(positive.length == 1){
-    let i1 = line_plane_intersection(positive[0],negative[0],n,d)
-    let i2 = line_plane_intersection(positive[0],negative[1],n,d)
-    // console.log(i1,i2)
-    triad.push([i2,negative[0], negative[1]])
-    triad.push([negative[0],i2,i1])
-    // console.log(triad);
-    return triad
-}
 
-// two outside n = 1
-else if(positive.length == 2){
-    triad.push(negative[0])
-    triad.push(line_plane_intersection(positive[0],negative[0],n,d))
-    triad.push(line_plane_intersection(positive[1],negative[0],n,d))
-    return [triad]
-}
-// all outside, no new triangles
-else{
-    return []
-}
+    // two outside n = 1
+    else if(positive.length == 2){
+        triad.push(line_plane_intersection(positive[0],negative[0],n,d))
+        triad.push(line_plane_intersection(positive[1],negative[0],n,d))
+        triad.push(negative[0])
+        // console.log(triad)
+        return [triad]
+    }
+    // all outside, no new triangles
+    else{
+        return []
+    }
 }
 
 function rectangle(sides, pts){
@@ -388,40 +395,45 @@ function rectangle(sides, pts){
             clipped = clipping(a,b,c)
             if(clipped == null)
                 continue;
-            a = clipped[0][0]
-            b = clipped[0][1]
-            c = clipped[0][2]
+            for(cl of clipped){
+                // console.log(cl)
+                a = cl[0]
+                b = cl[1]
+                c = cl[2]
 
-            // console.log(a,b,c)
+                // console.log(a,b,c)
 
-            let normal = cross_product(a,b,c)
-            // solid
-            normal = normalize(normal)
-            const dotp = dot_product(normalize(b),normal)
-            if(dotp >0){
-                a = convert_system(resize(a))
-                b = convert_system(resize(b))
-                c = convert_system(resize(c))
+                let normal = cross_product(a,b,c)
+                // solid
+                normal = normalize(normal)
+                const dotp = dot_product(normalize(b),normal)
+                // console.log(dotp)
+                // if(dotp >0){
+                    a = convert_system(resize(a))
+                    b = convert_system(resize(b))
+                    c = convert_system(resize(c))
 
-                ac = a
-                bc = b
-                cc = c
-                ctx.beginPath()
-                ctx.moveTo(ac.x, ac.y)
-                ctx.lineTo(bc.x, bc.y)
-                ctx.lineTo(cc.x, cc.y)
-                ctx.lineTo(ac.x, ac.y)
-                let color = Math.abs(dotp)*255
-                ctx.fillStyle = `rgba(${color},${color},${color},${1.0})`;
-                ctx.fill();
-                
-            }
+                    ac = a
+                    bc = b
+                    cc = c
+                    ctx.beginPath()
+                    ctx.moveTo(ac.x, ac.y)
+                    ctx.lineTo(bc.x, bc.y)
+                    ctx.lineTo(cc.x, cc.y)
+                    ctx.lineTo(ac.x, ac.y)
+                    let color = Math.abs(dotp)*255
+                    ctx.fillStyle = `rgba(${color},${color},${color},${1.0})`;
+                    ctx.fill();
+                    
+                // }
+        }
     }
 }
 }
 let matview;
 for(let i = 0; i<1; i++){
-    cubes.push(new rectangle(tri_sides,pts_1))
+    cubes.push(new rectangle(axis_f,axis_v))
+    // cubes.push(new rectangle(tri_sides,pts_1))
 }
 
 function animate(time) {       
