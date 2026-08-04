@@ -238,108 +238,89 @@ function lookatmatrix(positionvec, targetvec, j){
 
 }
 
-// function line(x,y,m){
-
-// }
-
-function lines_intersection(p1,p2,p3,p4){
-
-    let m1 = (p2.y-p1.y)/(p2.x-p1.x)
-
-    // let m2 = (p4.y-p3.y)/(p4.x-p3.x)
-
-
-    if(m1 == 0 || m1 == Infinity)
-        return {x:-1,y:-1}
-
-    // let ix = (m1*p1.x - m2*p3.x + p3.y - p1.y) / (m1-m2)
-    let ix = canvas.width
-
-    let iy = m1*ix - m1*p1.x + p1.y
+// make a loop that does for all planes instead of all these functions
+function clipping(p1,p2,p3){
+    // init of normals and D for planes
+    let n = [
+        {x:0,y:0,z:1},
+        {x:1,y:0,z:1},
+        {x:-1,y:0,z:1},
+        {x:0,y:1,z:1},
+        {x:0,y:-1,z:1},
+    ]
+    let d = [1,0,0,0,0]
+    let newp = [[p1,p2,p3]]
 
 
-    return {x:ix,y:iy}
-}
-
-
-function inside(p1,c1,c2){
-    if(p1.x<c1.x && p1.x <c2.x)
-        return true
-    return false
-}
-
-// clipping points form the xy plane
-function clipping_xy(p1,p2,p3){
-    // let zvalue = 1 //lookdir.z + 1
-    // let m = {
-    //     x:p2.x-p1.x,
-    //     y:p2.y-p1.y,
-    //     z:p2.z-p1.z
-    // }
-    // if((m.z == 0)){
-    //     return;
-    // }
-    // let t = (zvalue-p1.z)/(p2.z-p1.z)
-    // return [p1.z>zvalue?p1:p2,{x:m.x *t +p1.x,y:m.y*t+p1.y,z:m.z*t+p1.z }]
-     if(p1&&p2&&p3){
-    let zvalue = -1//lookdir.z + 1
-    if(p1.z <=zvalue&& p2.z <=zvalue&& p3.z <=zvalue){
-        return[p1,p2,p3];
+    for(let i = 0;i<5;i++){
+        let ans = []
+        for(p of newp)
+            ans.push(...cut_triangles(p,n[i],d[i]))
+        if(ans == null)
+            return 
+        // newp = []
+        // for(a of ans)
+        //     newp.push(ans)
+        newp = ans
+        
     }
-    return [];   
-}
-  return [];   
+
+
+    return newp
 }
 
-// slope is {1,0,1}
-// distance of point from plane = slope dot_prod point
-function clipping_xzL(p1,p2,p3){
-    if(p1&&p2&&p3){
-   let value1 = dot_product(p1,{x:1,y:0,z:1})
-   let value2 = dot_product(p2,{x:1,y:0,z:1})
-   let value3 = dot_product(p3,{x:1,y:0,z:1})
-    if(value1 <=0&& value2 <=0&& value3 <=0){
-        return[p1,p2,p3];
+function line_plane_intersection(p1,p2,n, d){
+    let t = (-d - dot_product(n,p1))/(dot_product(n,vec_sub(p2,p1)))
+    // this is intersection
+    return obj_addition(p1,vec_mul(vec_sub(p2,p1),t))
+    
+}
+
+function cut_triangles(pts, n, d){
+    // plane intersection
+    // console.log(pts)
+    if(pts.length===1)
+        pts = pts[0]
+    console.log(pts)
+
+    let v1 = dot_product(pts[0],n)+d
+    let v2 = dot_product(pts[1],n)+d
+    let v3 = dot_product(pts[2],n)+d
+    let values = [v1,v2,v3]
+    let negative = []
+    let positive = []
+    let triad = []
+    for( let i =0; i<3;i++){
+        if(values[i]<=0)
+            negative.push(pts[i])
+        else
+            positive.push(pts[i]);
     }
-    return [];   
+// none outside
+if(positive.length==0)
+    return [pts]
+// one outside
+else if(positive.length == 1){
+    let i1 = line_plane_intersection(positive[0],negative[0],n,d)
+    let i2 = line_plane_intersection(positive[0],negative[1],n,d)
+    // console.log(i1,i2)
+    triad.push([i2,negative[0], negative[1]])
+    triad.push([negative[0],i2,i1])
+    // console.log(triad);
+    return triad
 }
-return[];
+
+// two outside n = 1
+else if(positive.length == 2){
+    triad.push(negative[0])
+    triad.push(line_plane_intersection(positive[0],negative[0],n,d))
+    triad.push(line_plane_intersection(positive[1],negative[0],n,d))
+    return [triad]
 }
-function clipping_xzR(p1,p2,p3){
-     if(p1&&p2&&p3){
-   let value1 = dot_product(p1,{x:-1,y:0,z:1})
-   let value2 = dot_product(p2,{x:-1,y:0,z:1})
-   let value3 = dot_product(p3,{x:-1,y:0,z:1})
-    if(value1 <=0&& value2 <=0&& value3 <=0){
-        return[p1,p2,p3];
-    }
-    return [];   
+// all outside, no new triangles
+else{
+    return []
 }
-return[];
-}
-function clipping_yzR(p1,p2,p3){
-    if(p1&&p2&&p3){
-   let value1 = dot_product(p1,{x:0,y:1,z:1})
-   let value2 = dot_product(p2,{x:0,y:1,z:1})
-   let value3 = dot_product(p3,{x:0,y:1,z:1})
-    if(value1 <=0&& value2 <=0&& value3 <=0){
-        return[p1,p2,p3];
-    }
-    return [];   
-}
-return[];
-}
-function clipping_yzL(p1,p2,p3){
-      if(p1&&p2&&p3){
-   let value1 = dot_product(p1,{x:0,y:-1,z:1})
-   let value2 = dot_product(p2,{x:0,y:-1,z:1})
-   let value3 = dot_product(p3,{x:0,y:-1,z:1})
-    if(value1 <=0&& value2 <=0&& value3 <=0){
-        return[p1,p2,p3];
-    }
-    return [];   
-    }
-return[];
 }
 
 function rectangle(sides, pts){
@@ -403,19 +384,15 @@ function rectangle(sides, pts){
                 y:c_old[0][1],
                 z:c_old[0][2]
             }            
-            // console.log(a)
-            clipped = clipping_xy(a,b,c)
-            clipped = clipping_xzL(clipped[0],clipped[1],clipped[2])
-            clipped = clipping_xzR(clipped[0],clipped[1],clipped[2])
-            clipped = clipping_yzR(clipped[0],clipped[1],clipped[2])
-            clipped = clipping_yzR(clipped[0],clipped[1],clipped[2])
-            // consolse.log(clipped)
-            // debugger
-            if(clipped.length == 0)
+           
+            clipped = clipping(a,b,c)
+            if(clipped == null)
                 continue;
-            a = clipped[0]
-            b = clipped[1]
-            c = clipped[2]
+            a = clipped[0][0]
+            b = clipped[0][1]
+            c = clipped[0][2]
+
+            // console.log(a,b,c)
 
             let normal = cross_product(a,b,c)
             // solid
@@ -444,7 +421,7 @@ function rectangle(sides, pts){
 }
 let matview;
 for(let i = 0; i<1; i++){
-    cubes.push(new rectangle(axis_f, axis_v))
+    cubes.push(new rectangle(tri_sides,pts_1))
 }
 
 function animate(time) {       
