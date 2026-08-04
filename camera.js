@@ -260,7 +260,7 @@ function clipping(p1,p2,p3){
             
             let val = cut_triangles(p,n[i],d[i])
             if(val == null)
-                return
+                continue
             ans.push(...val)
         }
         newp = ans
@@ -272,55 +272,75 @@ function clipping(p1,p2,p3){
 }
 
 function line_plane_intersection(p1,p2,n, d){
-    if(dot_product(vec_sub(p2,p1),n)==0 && dot_product(p1,n)+d==0){
-        return p1
-    }
+    // if(dot_product(vec_sub(p2,p1),n)==0 && dot_product(p1,n)+d==0){
+    //     return p1
+    // }
     let t = (-d - dot_product(n,p1))/(dot_product(n,vec_sub(p2,p1)))
     // this is intersection
     return obj_addition(p1,vec_mul(vec_sub(p2,p1),t))
-    
 }
 
-function cut_triangles(pts, n, d){
+// instead of writing a function for the entire triangle, write one for lines, then a function to form a triangle with lines
+function cut_triangles(pts, n, p_dis){
     // plane intersection
     // console.log(pts)
-        if(pts.length===1){
-            console.log(pts)
-            pts = pts[0]}
+        // if(pts.length===1){
+        //     console.log(pts)
+        //     pts = pts[0]}
         // console.log(pts)
         
-        let v1 = dot_product(pts[0],n)+d
-        let v2 = dot_product(pts[1],n)+d
-        let v3 = dot_product(pts[2],n)+d
-        let values = [v1,v2,v3]
-        let negative = []
-        let positive = []
+        let d1 = dot_product(pts[0],n)+p_dis
+        let d2 = dot_product(pts[1],n)+p_dis
+        let d3 = dot_product(pts[2],n)+p_dis
+        let distances = [d1,d2,d3]
         let triad = []
-        for( let i =0; i<3;i++){
-            if(values[i]<=EPS)
-                negative.push(pts[i])
-            else
-                positive.push(pts[i]);
+        let positive = 0
+        for(a of distances){
+            if(a>0)
+                positive+=1
         }
+        let vert = [
+            {v:pts[0],d:d1},
+            {v:pts[1],d:d2},
+            {v:pts[2],d:d3}
+        ]
+        // console.log(positive)
     // none outside
-    if(positive.length==0)
+    if(positive ==0)
         return [pts]
     // one outside
-    else if(positive.length == 1){
-        let i1 = line_plane_intersection(positive[0],negative[0],n,d)
-        let i2 = line_plane_intersection(negative[1],positive[0],n,d)
+    // positive distance value is c, winding order to be maintined
+    else if(positive == 1){
+        if(vert[0].d>0)
+            vert.push(vert.shift())
+            
+        else if(vert[1].d>EPS){
+            vert.push(vert.shift())
+            vert.push(vert.shift())
+        }
+
+        let i1 = line_plane_intersection(vert[0].v,vert[2].v,n,p_dis)
+        let i2 = line_plane_intersection(vert[1].v,vert[2].v,n,p_dis)
         // console.log(i1,i2)
-        triad.push([negative[0],negative[1],i2])
-        triad.push([negative[0],i2,i1])
+        triad.push([vert[0].v,vert[1].v,i1])
+        triad.push([i1,vert[1].v,i2])
         // console.log(triad);
         return triad
     }
 
     // two outside n = 1
-    else if(positive.length == 2){
-        triad.push(line_plane_intersection(positive[0],negative[0],n,d))
-        triad.push(line_plane_intersection(positive[1],negative[0],n,d))
-        triad.push(negative[0])
+    // a is vert with negative value
+    else if(positive== 2){
+        if(vert[1].d<=EPS)
+            vert.push(vert.shift())
+        else if(vert[2].d<=EPS){
+            vert.push(vert.shift())
+            vert.push(vert.shift())
+        }
+        triad.push(vert[0].v)
+        triad.push(line_plane_intersection(vert[0].v,vert[1].v,n,p_dis))
+        triad.push(line_plane_intersection(vert[0].v,vert[2].v,n,p_dis))
+        
         // console.log(triad)
         return [triad]
     }
@@ -408,7 +428,7 @@ function rectangle(sides, pts){
                 normal = normalize(normal)
                 const dotp = dot_product(normalize(b),normal)
                 // console.log(dotp)
-                // if(dotp >0){
+                if(dotp >0){
                     a = convert_system(resize(a))
                     b = convert_system(resize(b))
                     c = convert_system(resize(c))
@@ -425,7 +445,7 @@ function rectangle(sides, pts){
                     ctx.fillStyle = `rgba(${color},${color},${color},${1.0})`;
                     ctx.fill();
                     
-                // }
+                }
         }
     }
 }
